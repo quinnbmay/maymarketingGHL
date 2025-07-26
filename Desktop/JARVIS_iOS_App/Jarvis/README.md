@@ -9,6 +9,7 @@ A beautiful JARVIS-inspired iOS voice assistant app with ElevenLabs integration 
 - **Beautiful UI**: Holographic glass morphism effects with animated particles
 - **Responsive Design**: Optimized for all iPhone sizes
 - **Privacy-First**: On-device speech recognition for enhanced privacy
+- **Dark Mode**: Optimized for dark theme with stunning visual effects
 
 ## 🚀 Quick Start
 
@@ -18,107 +19,108 @@ A beautiful JARVIS-inspired iOS voice assistant app with ElevenLabs integration 
 - ElevenLabs API key (free tier available)
 
 ### 2. Setup
-1. Open `Jarvis.xcodeproj` in Xcode
-2. Configure your ElevenLabs API key in `Configuration.swift`
-3. Build and run on your device
+1. **Clone or Download** the project
+2. **Open** `Jarvis.xcodeproj` in Xcode
+3. **Configure** your ElevenLabs API key in `Configuration.swift`
+4. **Build and run** on your device or simulator
 
 ### 3. Get ElevenLabs API Key
 1. Sign up at [ElevenLabs](https://elevenlabs.io/)
-2. Go to your profile and copy your API key
-3. Replace `YOUR_ELEVENLABS_API_KEY_HERE` in `Configuration.swift`
+2. Go to your profile → API Key
+3. Copy your API key
+4. Replace `YOUR_ELEVENLABS_API_KEY_HERE` in `Configuration.swift`
 
-## 🎯 How to Use
+## 📱 How to Use
 
-1. **First Launch**: Complete the onboarding process
-2. **Voice Commands**: Tap the microphone button and speak
-3. **Responses**: JARVIS will respond with natural voice synthesis
-4. **Continuous Mode**: Enable continuous listening for hands-free operation
+### First Launch
+1. **Grant Permissions**: Allow microphone and speech recognition when prompted
+2. **Complete Onboarding**: Follow the setup guide
+3. **Start Talking**: Tap the voice button and speak!
+
+### Voice Commands
+Try these commands:
+- "Hello JARVIS"
+- "What's the weather like?"
+- "Tell me a joke"
+- "What time is it?"
+- "How are you today?"
+- "What can you do?"
+
+## 🛠️ Project Structure
+
+```
+Jarvis/
+├── Jarvis.xcodeproj/          # Xcode project file
+├── Jarvis/
+│   ├── JarvisApp.swift        # Main app entry point
+│   ├── ContentView.swift      # Main UI with voice assistant
+│   ├── Configuration.swift    # API keys and settings
+│   ├── ElevenLabsService.swift # Voice synthesis service
+│   ├── Persistence.swift      # Core Data setup
+│   └── Assets.xcassets/       # App icons and colors
+├── JarvisTests/               # Unit tests
+└── JarvisUITests/             # UI tests
+```
 
 ## 🔧 Configuration
 
 ### API Keys
-Edit `Configuration.swift` to set your API keys:
+Edit `Configuration.swift`:
 ```swift
 static let elevenLabsAPIKey = "your_actual_api_key_here"
 ```
 
 ### Voice Settings
-Customize voice parameters in `Configuration.swift`:
+Customize voice parameters:
 ```swift
 static let defaultStability = 0.75
 static let defaultSimilarityBoost = 0.75
-static let defaultStyle = 0.0
+static let defaultVoiceID = "pNInz6obpgDQGcFmaJgB" // Adam voice
 ```
 
-## 🏗️ Project Structure
+## 🎨 UI Features
 
-```
-Jarvis/
-├── Jarvis/
-│   ├── ContentView.swift          # Main UI and voice assistant
-│   ├── Configuration.swift        # API keys and settings
-│   ├── ElevenLabsService.swift    # Voice synthesis service
-│   ├── JarvisApp.swift           # App entry point
-│   └── Assets.xcassets/          # App icons and colors
-├── Jarvis.xcodeproj/             # Xcode project file
-└── README.md                     # This file
-```
+- **Particle System**: Animated background particles
+- **Glass Morphism**: Holographic interface effects
+- **Voice Visualizer**: Real-time audio visualization
+- **Smooth Animations**: Fluid transitions and interactions
+- **Responsive Design**: Works on all iPhone sizes
 
-## 🎨 UI Components
+## 🔒 Privacy & Permissions
 
-- **ParticleSystemView**: Animated background particles
-- **GlassMorphismCard**: Holographic card effects
-- **VoiceButton**: Interactive microphone button
-- **OnboardingView**: First-time user experience
+The app requires:
+- **Microphone Access**: To hear your voice commands
+- **Speech Recognition**: To convert speech to text
 
-## 🔒 Permissions
-
-The app requires these permissions (already configured):
-- **Microphone**: For voice input
-- **Speech Recognition**: For converting speech to text
+All processing is done on-device for privacy.
 
 ## 🐛 Troubleshooting
 
 ### Build Issues
-- Ensure Xcode 15.0+ is installed
-- Clean build folder (Cmd+Shift+K)
-- Reset iOS Simulator if needed
+1. **Clean Build**: Xcode → Product → Clean Build Folder
+2. **Reset Simulator**: Simulator → Device → Erase All Content and Settings
+3. **Check Permissions**: Ensure microphone and speech recognition are enabled
 
-### Voice Recognition Issues
-- Check microphone permissions in Settings
-- Ensure device has internet connection
-- Verify ElevenLabs API key is valid
+### Voice Issues
+1. **Check API Key**: Verify ElevenLabs API key is correct
+2. **Internet Connection**: Ensure stable internet for voice synthesis
+3. **Microphone**: Test microphone in other apps
 
-### Audio Issues
-- Check device volume
-- Ensure no other apps are using audio
-- Try restarting the app
-
-## 📱 Supported Devices
-
-- iPhone running iOS 15.0+
-- iPad running iPadOS 15.0+
-- Optimized for iPhone 12 and newer
-
-## 🔄 Recent Fixes
-
-✅ **Fixed Info.plist conflicts** - Removed custom Info.plist and configured project settings
-✅ **Added missing permissions** - Microphone and Speech Recognition
-✅ **Integrated ElevenLabs service** - Complete voice synthesis implementation
-✅ **Enhanced UI components** - Glass morphism effects and animations
-✅ **Added error handling** - Proper error messages and fallbacks
-
-## 🚀 Next Steps
-
-1. **Add more voice commands** - Expand the command processing logic
-2. **Integrate with other APIs** - Weather, calendar, smart home
-3. **Add user preferences** - Voice selection, UI themes
-4. **Implement offline mode** - Basic responses without internet
+### Performance
+1. **Close Other Apps**: Free up memory
+2. **Restart Device**: Clear any background processes
+3. **Update iOS**: Ensure latest iOS version
 
 ## 📄 License
 
-This project is for educational purposes. Please respect ElevenLabs' terms of service.
+This project is for educational and personal use.
+
+## 🤝 Contributing
+
+Feel free to submit issues and enhancement requests!
 
 ---
 
-**Built with ❤️ using SwiftUI and ElevenLabs** 
+**Ready to experience the future of voice assistants?** 🚀
+
+Open `Jarvis.xcodeproj` in Xcode and start building your personal JARVIS! 
