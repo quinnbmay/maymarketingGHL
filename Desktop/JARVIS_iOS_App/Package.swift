@@ -1,3 +1,4 @@
+// swift-tools-version: 6.1
 // Swift Package Dependencies for JARVIS iOS App
 
 import PackageDescription
