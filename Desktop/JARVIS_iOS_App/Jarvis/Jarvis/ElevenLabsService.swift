@@ -736,4 +736,56 @@ enum ElevenLabsError: Error, LocalizedError {
             return "WebSocket Error: \(message)"
         }
     }
+}
+
+// MARK: - Conversational AI Agent
+
+class ConversationalAIAgent: ObservableObject {
+    let id: String
+    let name: String
+    let voiceID: String
+    let languageModel: String
+    let knowledgeBase: [String]
+    let tools: [String]
+    let isEnabled: Bool
+    
+    @Published var isConnected = false
+    @Published var lastMessage: String = ""
+    @Published var connectionStatus: String = "Disconnected"
+    
+    init(id: String, name: String, voiceID: String = JARVISConfiguration.ElevenLabs.defaultVoiceID, 
+         languageModel: String = JARVISConfiguration.ElevenLabs.LanguageModels.gpt4o, 
+         knowledgeBase: [String] = [], tools: [String] = [], isEnabled: Bool = true) {
+        self.id = id
+        self.name = name
+        self.voiceID = voiceID
+        self.languageModel = languageModel
+        self.knowledgeBase = knowledgeBase
+        self.tools = tools
+        self.isEnabled = isEnabled
+    }
+    
+    func connect() {
+        print("🤖 Connecting to Conversational AI Agent: \(name)")
+        isConnected = true
+        connectionStatus = "Connected"
+    }
+    
+    func disconnect() {
+        print("🤖 Disconnecting from Conversational AI Agent: \(name)")
+        isConnected = false
+        connectionStatus = "Disconnected"
+    }
+    
+    func sendMessage(_ message: String) async throws -> String {
+        guard isConnected else {
+            throw ElevenLabsError.conversationalAINotEnabled
+        }
+        
+        print("🤖 Sending message to agent: \(message)")
+        lastMessage = message
+        
+        // Placeholder response - in real implementation, this would send to ElevenLabs API
+        return "Agent \(name) received: \(message)"
+    }
 } 
