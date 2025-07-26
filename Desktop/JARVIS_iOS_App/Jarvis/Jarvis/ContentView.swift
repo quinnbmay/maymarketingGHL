@@ -178,6 +178,22 @@ struct JARVISMainView: View {
                     .foregroundColor(.white.opacity(0.9))
                     .animation(.easeInOut(duration: 0.3), value: viewModel.statusText)
                 
+                // Debug info (only show if not authorized)
+                if !viewModel.isAuthorized {
+                    VStack(spacing: 8) {
+                        Text("⚠️ Voice Recognition Issue")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                        
+                        Button("Request Permission") {
+                            viewModel.checkAuthorization()
+                        }
+                        .buttonStyle(SecondaryButtonStyle())
+                        .scaleEffect(0.8)
+                    }
+                    .padding(.top, 10)
+                }
+                
                 // Processing indicator
                 if viewModel.isProcessing {
                     VStack(spacing: 10) {
@@ -362,6 +378,7 @@ class VoiceAssistantViewModel: ObservableObject {
     @Published var transcribedText = ""
     @Published var isProcessing = false
     @Published var lastResponse = ""
+    @Published var isAuthorized = false
     
     private let audioEngine = AVAudioEngine()
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -372,6 +389,7 @@ class VoiceAssistantViewModel: ObservableObject {
     
     init() {
         setupAudioSession()
+        checkAuthorization()
         print("🎤 VoiceAssistantViewModel initialized")
     }
     
@@ -386,10 +404,52 @@ class VoiceAssistantViewModel: ObservableObject {
         }
     }
     
+    func checkAuthorization() {
+        SFSpeechRecognizer.requestAuthorization { [weak self] status in
+            DispatchQueue.main.async {
+                switch status {
+                case .authorized:
+                    self?.isAuthorized = true
+                    self?.statusText = "Tap to speak"
+                    print("✅ Speech recognition authorized")
+                case .denied:
+                    self?.isAuthorized = false
+                    self?.statusText = "Speech recognition denied"
+                    print("❌ Speech recognition denied")
+                case .restricted:
+                    self?.isAuthorized = false
+                    self?.statusText = "Speech recognition restricted"
+                    print("❌ Speech recognition restricted")
+                case .notDetermined:
+                    self?.isAuthorized = false
+                    self?.statusText = "Speech recognition not determined"
+                    print("❓ Speech recognition not determined")
+                @unknown default:
+                    self?.isAuthorized = false
+                    self?.statusText = "Speech recognition unknown status"
+                    print("❓ Unknown speech recognition status")
+                }
+            }
+        }
+    }
+    
     func startListening() {
         guard !isListening else { 
             print("⚠️ Already listening")
             return 
+        }
+        
+        guard isAuthorized else {
+            print("❌ Speech recognition not authorized")
+            statusText = "Speech recognition not authorized"
+            checkAuthorization()
+            return
+        }
+        
+        guard let speechRecognizer = speechRecognizer, speechRecognizer.isAvailable else {
+            print("❌ Speech recognizer not available")
+            statusText = "Speech recognizer not available"
+            return
         }
         
         print("🎤 Starting voice recognition...")
@@ -411,7 +471,7 @@ class VoiceAssistantViewModel: ObservableObject {
             }
             
             recognitionRequest.shouldReportPartialResults = true
-            recognitionRequest.requiresOnDeviceRecognition = true // For privacy
+            recognitionRequest.requiresOnDeviceRecognition = false // Allow cloud recognition for better accuracy
             
             // Setup audio engine
             let inputNode = audioEngine.inputNode
@@ -425,15 +485,19 @@ class VoiceAssistantViewModel: ObservableObject {
             try audioEngine.start()
             
             // Start recognition
-            recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+            recognitionTask = speechRecognizer.recognitionTask(with: recognitionRequest) { [weak self] result, error in
                 DispatchQueue.main.async {
                     if let result = result {
                         self?.transcribedText = result.bestTranscription.formattedString
                         print("🎤 Transcribed: \(result.bestTranscription.formattedString)")
                     }
                     
-                    if error != nil || result?.isFinal == true {
-                        print("🎤 Recognition completed or error: \(error?.localizedDescription ?? "No error")")
+                    if let error = error {
+                        print("❌ Recognition error: \(error.localizedDescription)")
+                        self?.statusText = "Recognition error"
+                        self?.stopListening()
+                    } else if result?.isFinal == true {
+                        print("✅ Recognition completed successfully")
                         self?.stopListening()
                     }
                 }
@@ -446,6 +510,7 @@ class VoiceAssistantViewModel: ObservableObject {
         } catch {
             print("❌ Failed to start recording: \(error)")
             statusText = "Error starting recording"
+            isListening = false
         }
     }
     
