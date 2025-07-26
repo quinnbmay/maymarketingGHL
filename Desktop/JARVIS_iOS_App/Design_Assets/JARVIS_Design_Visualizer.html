@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS iOS App Design Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #000000;
+            color: #FFFFFF;
+            overflow-x: auto;
+            padding: 20px;
+        }
+
+        .device-frame {
+            width: 375px;
+            height: 812px;
+            background: #000000;
+            border: 2px solid #333;
+            border-radius: 40px;
+            margin: 0 auto 40px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #00D4FF;
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 6s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .voice-visualizer {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .inner-circle {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .status-label {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+        }
+
+        .context-card {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            right: 20px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 16px;
+            backdrop-filter: blur(20px);
+        }
+
+        .action-buttons {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+        }
+
+        .action-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #00D4FF;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .design-specs {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .spec-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+        }
+
+        .spec-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #00D4FF;
+            margin-bottom: 16px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .color-swatch {
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            align-items: end;
+            padding: 8px;
+            font-size: 10px;
+            font-weight: 500;
+        }
+
+        .toggle-listening {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, #00D4FF, #0099CC);
+            border: none;
+            border-radius: 25px;
+            padding: 12px 24px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-listening:hover {
+            transform: translateX(-50%) scale(1.05);
+        }
+
+        .listening .voice-visualizer {
+            border-color: rgba(0, 212, 255, 0.8);
+            animation: listening-pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes listening-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(0, 212, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 100;
+            color: #00D4FF;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>JARVIS iOS App Design</h1>
+    
+    <div class="device-frame" id="device">
+        <!-- Animated particles background -->
+        <div class="particles-container"></div>
+        
+        <!-- Context card -->
+        <div class="context-card">
+            <div style="opacity: 0.7; font-size: 15px;">Last conversation:</div>
+            <div style="margin-top: 8px;">
+                <div style="opacity: 0.9;">You: "What's the weather today?"</div>
+                <div style="opacity: 0.7; margin-top: 4px;">JARVIS: "Currently 72°F and sunny in your location."</div>
+            </div>
+        </div>
+        
+        <!-- Voice visualizer -->
+        <div class="voice-visualizer">
+            <div class="inner-circle"></div>
+        </div>
+        
+        <!-- Status label -->
+        <div class="status-label">Tap to speak</div>
+        
+        <!-- Action buttons -->
+        <div class="action-buttons">
+            <div class="action-button">🕒</div>
+            <div class="action-button">⚙️</div>
+            <div class="action-button">⌨️</div>
+            <div class="action-button">📋</div>
+        </div>
+        
+        <!-- Toggle listening button -->
+        <button class="toggle-listening" onclick="toggleListening()">Start Listening</button>
+    </div>
+    
+    <div class="design-specs">
+        <div class="spec-card">
+            <div class="spec-title">Color Palette</div>
+            <div class="color-palette">
+                <div class="color-swatch" style="background: #000000; color: white;">#000000</div>
+                <div class="color-swatch" style="background: #00D4FF; color: black;">#00D4FF</div>
+                <div class="color-swatch" style="background: #FF6B35; color: white;">#FF6B35</div>
+                <div class="color-swatch" style="background: #7B68EE; color: white;">#7B68EE</div>
+                <div class="color-swatch" style="background: #00FF88; color: black;">#00FF88</div>
+                <div class="color-swatch" style="background: #FFB700; color: black;">#FFB700</div>
+                <div class="color-swatch" style="background: #FF3366; color: white;">#FF3366</div>
+                <div class="color-swatch" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white;">Glass</div>
+            </div>
+        </div>
+        
+        <div class="spec-card">
+            <div class="spec-title">Typography</div>
+            <div style="font-size: 72px; font-weight: 100; line-height: 1;">JARVIS</div>
+            <div style="font-size: 34px; font-weight: 700; margin: 8px 0;">Large Title</div>
+            <div style="font-size: 28px; font-weight: 600;">Title 1</div>
+            <div style="font-size: 17px; margin-top: 12px;">Body text using SF Pro Text for optimal readability on iOS devices.</div>
+        </div>
+        
+        <div class="spec-card">
+            <div class="spec-title">Voice States</div>
+            <div style="margin: 12px 0;"><strong>Idle:</strong> Subtle pulse, 30% opacity ring</div>
+            <div style="margin: 12px 0;"><strong>Listening:</strong> Expanding concentric rings</div>
+            <div style="margin: 12px 0;"><strong>Processing:</strong> Rotating segments</div>
+            <div style="margin: 12px 0;"><strong>Speaking:</strong> Frequency waveform visualization</div>
+        </div>
+        
+        <div class="spec-card">
+            <div class="spec-title">Glass Morphism</div>
+            <div style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; backdrop-filter: blur(20px); margin-top: 12px;">
+                This is an example of the glass morphism effect used throughout the app with 5% white opacity background and 20pt backdrop blur.
+            </div>
+        </div>
+        
+        <div class="spec-card">
+            <div class="spec-title">Animations</div>
+            <div style="margin: 12px 0;"><strong>Pulse:</strong> 3s ease-in-out scale animation</div>
+            <div style="margin: 12px 0;"><strong>Transitions:</strong> 0.3s fade with stagger</div>
+            <div style="margin: 12px 0;"><strong>Haptics:</strong> Success, Error, Selection patterns</div>
+            <div style="margin: 12px 0;"><strong>Particles:</strong> 200-300 floating elements</div>
+        </div>
+        
+        <div class="spec-card">
+            <div class="spec-title">Measurements</div>
+            <div style="margin: 12px 0;"><strong>Voice Visualizer:</strong> 400pt × 400pt</div>
+            <div style="margin: 12px 0;"><strong>Action Buttons:</strong> 60pt diameter</div>
+            <div style="margin: 12px 0;"><strong>Padding:</strong> 20pt horizontal, 24pt vertical</div>
+            <div style="margin: 12px 0;"><strong>Corner Radius:</strong> 16pt for cards</div>
+        </div>
+    </div>
+
+    <script>
+        let isListening = false;
+        
+        function toggleListening() {
+            const device = document.getElementById('device');
+            const button = document.querySelector('.toggle-listening');
+            const statusLabel = document.querySelector('.status-label');
+            
+            isListening = !isListening;
+            
+            if (isListening) {
+                device.classList.add('listening');
+                button.textContent = 'Stop Listening';
+                statusLabel.textContent = 'Listening...';
+            } else {
+                device.classList.remove('listening');
+                button.textContent = 'Start Listening';
+                statusLabel.textContent = 'Tap to speak';
+            }
+        }
+        
+        // Create animated particles
+        function createParticles() {
+            const container = document.querySelector('.particles-container');
+            const particleCount = 50; // Reduced for performance
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (4 + Math.random() * 4) + 's';
+                container.appendChild(particle);
+            }
+        }
+        
+        // Initialize particles on load
+        window.addEventListener('load', createParticles);
+    </script>
+</body>
+</html>
