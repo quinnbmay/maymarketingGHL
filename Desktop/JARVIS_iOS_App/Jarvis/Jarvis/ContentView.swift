@@ -85,6 +85,8 @@ struct JARVISMainView: View {
     @StateObject private var viewModel = VoiceAssistantViewModel()
     @State private var showSettings = false
     @State private var animationPhase = 0.0
+    @State private var showKeyboard = false
+    @State private var textInput = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -145,11 +147,19 @@ struct JARVISMainView: View {
                         .frame(width: 200, height: 200)
                         .contentShape(Circle())
                         .onTapGesture {
-                            toggleListening()
+                            if viewModel.isListening {
+                                viewModel.stopListening()
+                            } else {
+                                viewModel.startListening()
+                            }
                         }
-                        .onLongPressGesture {
-                            startContinuousListening()
-                        }
+                    
+                    // Microphone icon
+                    Image(systemName: viewModel.isListening ? "waveform" : "mic.fill")
+                        .font(.system(size: 40, weight: .light))
+                        .foregroundColor(Color(hex: "00D4FF"))
+                        .scaleEffect(viewModel.isListening ? 1.2 : 1.0)
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.isListening)
                 }
                 
                 // Status Text
@@ -166,61 +176,114 @@ struct JARVISMainView: View {
                         .padding(.top, 10)
                 }
                 
-                // Transcribed Text
+                // Transcribed text display
                 if !viewModel.transcribedText.isEmpty {
-                    Text(viewModel.transcribedText)
-                        .font(.system(size: 16))
-                        .foregroundColor(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                    VStack(spacing: 12) {
+                        Text("You said:")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.6))
+                        
+                        Text(viewModel.transcribedText)
+                            .font(.body)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+                    .padding(.top, 20)
                 }
             }
             
             Spacer()
             
-            // Action Buttons
-            HStack(spacing: 20) {
-                ActionButton(icon: "clock.arrow.circlepath", action: {})
-                ActionButton(icon: "keyboard", action: {})
-                ActionButton(icon: "list.bullet.rectangle", action: {})
-                ActionButton(icon: "mic.slash", action: { viewModel.stopListening() })
+            // Bottom Controls
+            HStack(spacing: 30) {
+                // Keyboard button
+                Button(action: { showKeyboard.toggle() }) {
+                    Image(systemName: "keyboard")
+                        .font(.title2)
+                        .foregroundColor(Color(hex: "00D4FF"))
+                        .frame(width: 50, height: 50)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Circle())
+                }
+                
+                // Continuous listening button
+                Button(action: { viewModel.startContinuousListening() }) {
+                    Image(systemName: "mic.badge.plus")
+                        .font(.title2)
+                        .foregroundColor(Color(hex: "00D4FF"))
+                        .frame(width: 50, height: 50)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Circle())
+                }
             }
-            .padding(.bottom, 60)
+            .padding(.bottom, 40)
         }
         .sheet(isPresented: $showSettings) {
             SettingsView()
                 .environmentObject(dependencies)
         }
+        .sheet(isPresented: $showKeyboard) {
+            KeyboardInputView(textInput: $textInput, onSubmit: { text in
+                viewModel.processTextCommand(text)
+                showKeyboard = false
+            })
+        }
         .onAppear {
-            startAnimation()
+            // Start animation
+            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
+                animationPhase = .pi * 2
+            }
         }
     }
+}
+
+// MARK: - Keyboard Input View
+struct KeyboardInputView: View {
+    @Binding var textInput: String
+    let onSubmit: (String) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var isTextFieldFocused: Bool
     
-    private func startAnimation() {
-        withAnimation(.linear(duration: 1).repeatForever(autoreverses: false)) {
-            animationPhase = .pi * 2
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 20) {
+                Text("Type your command")
+                    .font(.title2)
+                    .foregroundColor(Color(hex: "00D4FF"))
+                
+                TextField("Enter your message...", text: $textInput, axis: .vertical)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .focused($isTextFieldFocused)
+                    .lineLimit(3...6)
+                    .padding(.horizontal)
+                
+                Button("Send") {
+                    if !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        onSubmit(textInput)
+                        textInput = ""
+                    }
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .disabled(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                
+                Spacer()
+            }
+            .padding()
+            .background(Color.black)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(Color(hex: "00D4FF"))
+                }
+            }
         }
-    }
-    
-    private func toggleListening() {
-        if viewModel.isListening {
-            viewModel.stopListening()
-        } else {
-            viewModel.startListening()
+        .onAppear {
+            isTextFieldFocused = true
         }
-        
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
-    }
-    
-    private func startContinuousListening() {
-        viewModel.startContinuousListening()
-        
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-        impactFeedback.impactOccurred()
     }
 }
 
@@ -335,6 +398,10 @@ class VoiceAssistantViewModel: ObservableObject {
         statusText = "Continuous listening..."
     }
     
+    func processTextCommand(_ text: String) {
+        processVoiceCommand(text)
+    }
+    
     private func processVoiceCommand(_ command: String) {
         Task {
             await MainActor.run {
@@ -353,12 +420,13 @@ class VoiceAssistantViewModel: ObservableObject {
                     statusText = "Tap to speak"
                     isProcessing = false
                 }
+                
             } catch {
                 await MainActor.run {
-                    statusText = "Error: \(error.localizedDescription)"
+                    statusText = "Error processing command"
                     isProcessing = false
                 }
-                print("Error processing voice command: \(error)")
+                print("Error processing command: \(error)")
             }
         }
     }
@@ -368,44 +436,70 @@ class VoiceAssistantViewModel: ObservableObject {
         
         if lowercased.contains("hello") || lowercased.contains("hi") {
             return "Hello! I'm JARVIS, your AI assistant. How can I help you today?"
+        } else if lowercased.contains("weather") {
+            return "I'm sorry, I don't have access to weather data yet. But I can help you with other tasks!"
+        } else if lowercased.contains("joke") {
+            return "Why don't scientists trust atoms? Because they make up everything!"
         } else if lowercased.contains("time") {
             let formatter = DateFormatter()
             formatter.timeStyle = .short
             return "The current time is \(formatter.string(from: Date()))"
-        } else if lowercased.contains("weather") {
-            return "I'm sorry, I don't have access to weather information yet. This feature is coming soon!"
-        } else if lowercased.contains("thank") {
-            return "You're welcome! Is there anything else I can help you with?"
-        } else if lowercased.contains("bye") || lowercased.contains("goodbye") {
-            return "Goodbye! Have a great day!"
+        } else if lowercased.contains("how are you") {
+            return "I'm functioning perfectly! Thank you for asking. How are you doing?"
+        } else if lowercased.contains("what can you do") {
+            return "I can help you with voice commands, answer questions, tell jokes, and more. Just ask me anything!"
         } else {
-            return "I heard you say: \(command). I'm still learning, but I'll do my best to help you!"
+            return "I heard you say: \(command). I'm still learning, but I'm here to help!"
         }
     }
 }
 
-// MARK: - Action Button
-struct ActionButton: View {
-    let icon: String
-    let action: () -> Void
+// MARK: - Particle System View
+struct ParticleSystemView: View {
+    @State private var particles: [Particle] = []
     
     var body: some View {
-        Button(action: action) {
-            ZStack {
+        ZStack {
+            ForEach(particles) { particle in
                 Circle()
-                    .fill(Color.white.opacity(0.1))
-                    .frame(width: 60, height: 60)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundColor(Color(hex: "00D4FF"))
+                    .fill(Color(hex: "00D4FF").opacity(particle.opacity))
+                    .frame(width: particle.size, height: particle.size)
+                    .position(particle.position)
+                    .animation(.linear(duration: particle.duration).repeatForever(autoreverses: false), value: particle.position)
             }
         }
-        .buttonStyle(ScaleButtonStyle())
+        .onAppear {
+            createParticles()
+        }
+    }
+    
+    private func createParticles() {
+        for _ in 0..<20 {
+            let particle = Particle()
+            particles.append(particle)
+        }
+    }
+}
+
+// MARK: - Particle Model
+struct Particle: Identifiable {
+    let id = UUID()
+    let position: CGPoint
+    let size: CGFloat
+    let opacity: Double
+    let duration: Double
+    
+    init() {
+        let screenWidth = UIScreen.main.bounds.width
+        let screenHeight = UIScreen.main.bounds.height
+        
+        position = CGPoint(
+            x: CGFloat.random(in: 0...screenWidth),
+            y: CGFloat.random(in: 0...screenHeight)
+        )
+        size = CGFloat.random(in: 2...6)
+        opacity = Double.random(in: 0.1...0.3)
+        duration = Double.random(in: 8...15)
     }
 }
 
@@ -416,63 +510,6 @@ struct ScaleButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
-}
-
-// MARK: - Particle System Background
-struct ParticleSystemView: View {
-    @State private var particles: [Particle] = []
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                ForEach(particles) { particle in
-                    Circle()
-                        .fill(Color(hex: "00D4FF").opacity(0.3))
-                        .frame(width: 2, height: 2)
-                        .position(particle.position)
-                        .animation(
-                            .linear(duration: particle.duration)
-                            .repeatForever(autoreverses: false),
-                            value: particle.position
-                        )
-                }
-            }
-            .onAppear {
-                createParticles(in: geometry.size)
-            }
-        }
-    }
-    
-    private func createParticles(in size: CGSize) {
-        particles = (0..<100).map { _ in
-            Particle(
-                position: CGPoint(
-                    x: CGFloat.random(in: 0...size.width),
-                    y: CGFloat.random(in: 0...size.height)
-                ),
-                duration: Double.random(in: 4...8)
-            )
-        }
-        
-        // Animate particles
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            for i in particles.indices {
-                withAnimation {
-                    particles[i].position = CGPoint(
-                        x: CGFloat.random(in: 0...size.width),
-                        y: CGFloat.random(in: 0...size.height)
-                    )
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Particle Model
-struct Particle: Identifiable {
-    let id = UUID()
-    var position: CGPoint
-    let duration: Double
 }
 
 // MARK: - Onboarding View
