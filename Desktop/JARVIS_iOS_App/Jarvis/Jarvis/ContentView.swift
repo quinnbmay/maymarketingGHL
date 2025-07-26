@@ -335,8 +335,8 @@ struct JARVISMainView: View {
                 animationPhase = .pi * 2
             }
         }
-        .onChange(of: viewModel.isListening) { isListening in
-            pulseAnimation = isListening
+        .onChange(of: viewModel.isListening) { oldValue, newValue in
+            pulseAnimation = newValue
         }
     }
 }
