@@ -180,16 +180,40 @@ struct JARVISMainView: View {
                 
                 // Debug info (only show if not authorized)
                 if !viewModel.isAuthorized {
-                    VStack(spacing: 8) {
-                        Text("⚠️ Voice Recognition Issue")
-                            .font(.caption)
+                    VStack(spacing: 12) {
+                        Text("⚠️ Permission Required")
+                            .font(.headline)
                             .foregroundColor(.orange)
                         
-                        Button("Request Permission") {
-                            viewModel.checkAuthorization()
+                        VStack(spacing: 8) {
+                            HStack {
+                                Image(systemName: viewModel.microphoneAuthorized ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(viewModel.microphoneAuthorized ? .green : .red)
+                                Text("Microphone Access")
+                                    .font(.caption)
+                                Spacer()
+                            }
+                            
+                            HStack {
+                                Image(systemName: viewModel.speechAuthorized ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundColor(viewModel.speechAuthorized ? .green : .red)
+                                Text("Speech Recognition")
+                                    .font(.caption)
+                                Spacer()
+                            }
                         }
-                        .buttonStyle(SecondaryButtonStyle())
-                        .scaleEffect(0.8)
+                        .padding(.horizontal)
+                        
+                        Button("Request Permissions") {
+                            viewModel.requestAllPermissions()
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .scaleEffect(0.9)
+                        
+                        Text("Tap the button above to grant permissions")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.6))
+                            .multilineTextAlignment(.center)
                     }
                     .padding(.top, 10)
                 }
@@ -379,6 +403,8 @@ class VoiceAssistantViewModel: ObservableObject {
     @Published var isProcessing = false
     @Published var lastResponse = ""
     @Published var isAuthorized = false
+    @Published var microphoneAuthorized = false
+    @Published var speechAuthorized = false
     
     private let audioEngine = AVAudioEngine()
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -389,7 +415,7 @@ class VoiceAssistantViewModel: ObservableObject {
     
     init() {
         setupAudioSession()
-        checkAuthorization()
+        requestAllPermissions()
         print("🎤 VoiceAssistantViewModel initialized")
     }
     
@@ -404,33 +430,75 @@ class VoiceAssistantViewModel: ObservableObject {
         }
     }
     
-    func checkAuthorization() {
+    func requestAllPermissions() {
+        print("🔐 Requesting all permissions...")
+        requestMicrophonePermission()
+        requestSpeechRecognitionPermission()
+    }
+    
+    private func requestMicrophonePermission() {
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { [weak self] granted in
+                DispatchQueue.main.async {
+                    self?.microphoneAuthorized = granted
+                    print(granted ? "✅ Microphone permission granted" : "❌ Microphone permission denied")
+                    self?.updateAuthorizationStatus()
+                }
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { [weak self] granted in
+                DispatchQueue.main.async {
+                    self?.microphoneAuthorized = granted
+                    print(granted ? "✅ Microphone permission granted" : "❌ Microphone permission denied")
+                    self?.updateAuthorizationStatus()
+                }
+            }
+        }
+    }
+    
+    func requestSpeechRecognitionPermission() {
         SFSpeechRecognizer.requestAuthorization { [weak self] status in
             DispatchQueue.main.async {
                 switch status {
                 case .authorized:
-                    self?.isAuthorized = true
-                    self?.statusText = "Tap to speak"
+                    self?.speechAuthorized = true
                     print("✅ Speech recognition authorized")
                 case .denied:
-                    self?.isAuthorized = false
-                    self?.statusText = "Speech recognition denied"
+                    self?.speechAuthorized = false
                     print("❌ Speech recognition denied")
                 case .restricted:
-                    self?.isAuthorized = false
-                    self?.statusText = "Speech recognition restricted"
+                    self?.speechAuthorized = false
                     print("❌ Speech recognition restricted")
                 case .notDetermined:
-                    self?.isAuthorized = false
-                    self?.statusText = "Speech recognition not determined"
+                    self?.speechAuthorized = false
                     print("❓ Speech recognition not determined")
                 @unknown default:
-                    self?.isAuthorized = false
-                    self?.statusText = "Speech recognition unknown status"
+                    self?.speechAuthorized = false
                     print("❓ Unknown speech recognition status")
                 }
+                self?.updateAuthorizationStatus()
             }
         }
+    }
+    
+    private func updateAuthorizationStatus() {
+        isAuthorized = microphoneAuthorized && speechAuthorized
+        
+        if isAuthorized {
+            statusText = "Tap to speak"
+        } else if !microphoneAuthorized && !speechAuthorized {
+            statusText = "Microphone & Speech access needed"
+        } else if !microphoneAuthorized {
+            statusText = "Microphone access needed"
+        } else if !speechAuthorized {
+            statusText = "Speech recognition needed"
+        }
+        
+        print("🔐 Authorization status - Microphone: \(microphoneAuthorized), Speech: \(speechAuthorized), Overall: \(isAuthorized)")
+    }
+    
+    func checkAuthorization() {
+        requestAllPermissions()
     }
     
     func startListening() {
@@ -440,9 +508,8 @@ class VoiceAssistantViewModel: ObservableObject {
         }
         
         guard isAuthorized else {
-            print("❌ Speech recognition not authorized")
-            statusText = "Speech recognition not authorized"
-            checkAuthorization()
+            print("❌ Not authorized - Microphone: \(microphoneAuthorized), Speech: \(speechAuthorized)")
+            statusText = "Permissions needed - tap Request Permission"
             return
         }
         
