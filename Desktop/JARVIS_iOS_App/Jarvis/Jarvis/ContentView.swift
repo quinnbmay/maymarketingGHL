@@ -256,78 +256,39 @@ struct JARVISMainView: View {
             
             // Bottom Controls
             HStack(spacing: 30) {
-                // Keyboard button
-                Button(action: { 
-                    print("⌨️ Keyboard button tapped")
-                    showKeyboard.toggle() 
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "keyboard")
-                            .font(.title2)
-                            .foregroundColor(Color(hex: "00D4FF"))
-                        
-                        Text("Text")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .frame(width: 60, height: 60)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                Button(action: { showKeyboard.toggle() }) {
+                    Image(systemName: "keyboard")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Color(hex: "00D4FF").opacity(0.3))
+                        .clipShape(Circle())
                 }
-                .buttonStyle(ScaleButtonStyle())
                 
-                // Continuous listening button
-                Button(action: { 
-                    print("🎧 Continuous listening button tapped")
-                    viewModel.startContinuousListening() 
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "mic.badge.plus")
-                            .font(.title2)
-                            .foregroundColor(Color(hex: "00D4FF"))
-                        
-                        Text("Listen")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .frame(width: 60, height: 60)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                Button(action: { viewModel.startContinuousListening() }) {
+                    Image(systemName: "mic.badge.plus")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Color(hex: "00D4FF").opacity(0.3))
+                        .clipShape(Circle())
                 }
-                .buttonStyle(ScaleButtonStyle())
                 
-                // Stop button
-                Button(action: { 
-                    print("⏹️ Stop button tapped")
-                    viewModel.stopListening() 
-                }) {
-                    VStack(spacing: 4) {
-                        Image(systemName: "stop.fill")
-                            .font(.title2)
-                            .foregroundColor(Color(hex: "FF6B6B"))
-                        
-                        Text("Stop")
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                    .frame(width: 60, height: 60)
-                    .background(Color.white.opacity(0.1))
-                    .clipShape(Circle())
+                Button(action: { showSettings.toggle() }) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Color(hex: "00D4FF").opacity(0.3))
+                        .clipShape(Circle())
                 }
-                .buttonStyle(ScaleButtonStyle())
             }
-            .padding(.bottom, 40)
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-                .environmentObject(dependencies)
-        }
-        .sheet(isPresented: $showKeyboard) {
-            KeyboardInputView(textInput: $textInput, onSubmit: { text in
-                print("📝 Text submitted: \(text)")
-                viewModel.processTextCommand(text)
-                showKeyboard = false
-            })
+            .padding(.bottom, 50)
+            
+            // Settings Sheet
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+            }
         }
         .onAppear {
             // Start animation
