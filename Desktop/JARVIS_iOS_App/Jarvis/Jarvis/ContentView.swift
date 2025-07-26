@@ -87,6 +87,7 @@ struct JARVISMainView: View {
     @State private var animationPhase = 0.0
     @State private var showKeyboard = false
     @State private var textInput = ""
+    @State private var pulseAnimation = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -99,7 +100,10 @@ struct JARVISMainView: View {
                 
                 Spacer()
                 
-                Button(action: { showSettings = true }) {
+                Button(action: { 
+                    print("🔧 Settings button tapped")
+                    showSettings = true 
+                }) {
                     Image(systemName: "gearshape.fill")
                         .font(.title2)
                         .foregroundColor(Color(hex: "00D4FF"))
@@ -114,22 +118,27 @@ struct JARVISMainView: View {
             VStack(spacing: 40) {
                 // Voice Visualizer Circle
                 ZStack {
-                    // Outer ring
+                    // Outer ring with pulse animation
                     Circle()
                         .stroke(
                             Color(hex: "00D4FF").opacity(viewModel.isListening ? 0.8 : 0.3),
                             lineWidth: 2
                         )
                         .frame(width: 200, height: 200)
-                        .scaleEffect(viewModel.isListening ? 1.1 : 1.0)
-                        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: viewModel.isListening)
+                        .scaleEffect(pulseAnimation ? 1.2 : 1.0)
+                        .animation(
+                            viewModel.isListening ? 
+                            .easeInOut(duration: 1.0).repeatForever(autoreverses: true) : 
+                            .easeInOut(duration: 0.3),
+                            value: pulseAnimation
+                        )
                     
                     // Inner circle with gradient
                     Circle()
                         .fill(
                             RadialGradient(
                                 colors: [
-                                    Color(hex: "00D4FF").opacity(0.2),
+                                    Color(hex: "00D4FF").opacity(viewModel.isListening ? 0.4 : 0.2),
                                     Color.clear
                                 ],
                                 center: .center,
@@ -147,6 +156,7 @@ struct JARVISMainView: View {
                         .frame(width: 200, height: 200)
                         .contentShape(Circle())
                         .onTapGesture {
+                            print("🎤 Main voice button tapped")
                             if viewModel.isListening {
                                 viewModel.stopListening()
                             } else {
@@ -170,10 +180,16 @@ struct JARVISMainView: View {
                 
                 // Processing indicator
                 if viewModel.isProcessing {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "00D4FF")))
-                        .scaleEffect(1.2)
-                        .padding(.top, 10)
+                    VStack(spacing: 10) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(hex: "00D4FF")))
+                            .scaleEffect(1.2)
+                        
+                        Text("Processing...")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .padding(.top, 10)
                 }
                 
                 // Transcribed text display
@@ -188,6 +204,9 @@ struct JARVISMainView: View {
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(10)
                     }
                     .padding(.top, 20)
                 }
@@ -198,24 +217,64 @@ struct JARVISMainView: View {
             // Bottom Controls
             HStack(spacing: 30) {
                 // Keyboard button
-                Button(action: { showKeyboard.toggle() }) {
-                    Image(systemName: "keyboard")
-                        .font(.title2)
-                        .foregroundColor(Color(hex: "00D4FF"))
-                        .frame(width: 50, height: 50)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
+                Button(action: { 
+                    print("⌨️ Keyboard button tapped")
+                    showKeyboard.toggle() 
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "keyboard")
+                            .font(.title2)
+                            .foregroundColor(Color(hex: "00D4FF"))
+                        
+                        Text("Text")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
                 }
+                .buttonStyle(ScaleButtonStyle())
                 
                 // Continuous listening button
-                Button(action: { viewModel.startContinuousListening() }) {
-                    Image(systemName: "mic.badge.plus")
-                        .font(.title2)
-                        .foregroundColor(Color(hex: "00D4FF"))
-                        .frame(width: 50, height: 50)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
+                Button(action: { 
+                    print("🎧 Continuous listening button tapped")
+                    viewModel.startContinuousListening() 
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "mic.badge.plus")
+                            .font(.title2)
+                            .foregroundColor(Color(hex: "00D4FF"))
+                        
+                        Text("Listen")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
                 }
+                .buttonStyle(ScaleButtonStyle())
+                
+                // Stop button
+                Button(action: { 
+                    print("⏹️ Stop button tapped")
+                    viewModel.stopListening() 
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "stop.fill")
+                            .font(.title2)
+                            .foregroundColor(Color(hex: "FF6B6B"))
+                        
+                        Text("Stop")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.7))
+                    }
+                    .frame(width: 60, height: 60)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(Circle())
+                }
+                .buttonStyle(ScaleButtonStyle())
             }
             .padding(.bottom, 40)
         }
@@ -225,6 +284,7 @@ struct JARVISMainView: View {
         }
         .sheet(isPresented: $showKeyboard) {
             KeyboardInputView(textInput: $textInput, onSubmit: { text in
+                print("📝 Text submitted: \(text)")
                 viewModel.processTextCommand(text)
                 showKeyboard = false
             })
@@ -234,6 +294,9 @@ struct JARVISMainView: View {
             withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
                 animationPhase = .pi * 2
             }
+        }
+        .onChange(of: viewModel.isListening) { isListening in
+            pulseAnimation = isListening
         }
     }
 }
@@ -257,29 +320,34 @@ struct KeyboardInputView: View {
                     .focused($isTextFieldFocused)
                     .lineLimit(3...6)
                     .padding(.horizontal)
-                
-                Button("Send") {
-                    if !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        onSubmit(textInput)
-                        textInput = ""
+                    .onSubmit {
+                        if !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            onSubmit(textInput)
+                            textInput = ""
+                        }
                     }
+                
+                HStack(spacing: 20) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                    
+                    Button("Send") {
+                        if !textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            onSubmit(textInput)
+                            textInput = ""
+                        }
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
+                    .disabled(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
-                .buttonStyle(ScaleButtonStyle())
-                .disabled(textInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 
                 Spacer()
             }
             .padding()
             .background(Color.black)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(Color(hex: "00D4FF"))
-                }
-            }
         }
         .onAppear {
             isTextFieldFocused = true
@@ -293,15 +361,18 @@ class VoiceAssistantViewModel: ObservableObject {
     @Published var statusText = "Tap to speak"
     @Published var transcribedText = ""
     @Published var isProcessing = false
+    @Published var lastResponse = ""
     
     private let audioEngine = AVAudioEngine()
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let elevenLabsService = ElevenLabsService()
+    private var continuousListeningTimer: Timer?
     
     init() {
         setupAudioSession()
+        print("🎤 VoiceAssistantViewModel initialized")
     }
     
     private func setupAudioSession() {
@@ -309,13 +380,19 @@ class VoiceAssistantViewModel: ObservableObject {
             let audioSession = AVAudioSession.sharedInstance()
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
             try audioSession.setActive(true)
+            print("✅ Audio session configured")
         } catch {
-            print("Failed to setup audio session: \(error)")
+            print("❌ Failed to setup audio session: \(error)")
         }
     }
     
     func startListening() {
-        guard !isListening else { return }
+        guard !isListening else { 
+            print("⚠️ Already listening")
+            return 
+        }
+        
+        print("🎤 Starting voice recognition...")
         
         // Cancel any existing recognition task
         recognitionTask?.cancel()
@@ -352,9 +429,11 @@ class VoiceAssistantViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     if let result = result {
                         self?.transcribedText = result.bestTranscription.formattedString
+                        print("🎤 Transcribed: \(result.bestTranscription.formattedString)")
                     }
                     
                     if error != nil || result?.isFinal == true {
+                        print("🎤 Recognition completed or error: \(error?.localizedDescription ?? "No error")")
                         self?.stopListening()
                     }
                 }
@@ -362,14 +441,17 @@ class VoiceAssistantViewModel: ObservableObject {
             
             isListening = true
             statusText = "Listening..."
+            transcribedText = ""
             
         } catch {
-            print("Failed to start recording: \(error)")
+            print("❌ Failed to start recording: \(error)")
             statusText = "Error starting recording"
         }
     }
     
     func stopListening() {
+        print("⏹️ Stopping voice recognition...")
+        
         audioEngine.stop()
         audioEngine.inputNode.removeTap(onBus: 0)
         recognitionRequest?.endAudio()
@@ -381,6 +463,8 @@ class VoiceAssistantViewModel: ObservableObject {
         // Process the transcribed text
         if !transcribedText.isEmpty {
             processVoiceCommand(transcribedText)
+        } else {
+            statusText = "Tap to speak"
         }
         
         // Reset audio session
@@ -389,28 +473,49 @@ class VoiceAssistantViewModel: ObservableObject {
             try audioSession.setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .allowBluetooth])
             try audioSession.setActive(true)
         } catch {
-            print("Failed to reset audio session: \(error)")
+            print("❌ Failed to reset audio session: \(error)")
         }
     }
     
     func startContinuousListening() {
+        print("🎧 Starting continuous listening...")
         startListening()
         statusText = "Continuous listening..."
+        
+        // Set up timer for continuous listening
+        continuousListeningTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+            if self?.isListening == true {
+                print("🔄 Restarting continuous listening...")
+                self?.stopListening()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self?.startListening()
+                }
+            }
+        }
     }
     
     func processTextCommand(_ text: String) {
+        print("📝 Processing text command: \(text)")
+        transcribedText = text
         processVoiceCommand(text)
     }
     
     private func processVoiceCommand(_ command: String) {
+        print("🧠 Processing voice command: \(command)")
+        
         Task {
             await MainActor.run {
                 isProcessing = true
             }
             
             do {
-                // Simple response logic - you can expand this
+                // Generate response
                 let response = generateResponse(to: command)
+                print("🤖 Generated response: \(response)")
+                
+                await MainActor.run {
+                    lastResponse = response
+                }
                 
                 // Synthesize and play the response
                 let audioData = try await elevenLabsService.synthesizeSpeech(text: response)
@@ -422,11 +527,11 @@ class VoiceAssistantViewModel: ObservableObject {
                 }
                 
             } catch {
+                print("❌ Error processing command: \(error)")
                 await MainActor.run {
                     statusText = "Error processing command"
                     isProcessing = false
                 }
-                print("Error processing command: \(error)")
             }
         }
     }
@@ -447,9 +552,17 @@ class VoiceAssistantViewModel: ObservableObject {
         } else if lowercased.contains("how are you") {
             return "I'm functioning perfectly! Thank you for asking. How are you doing?"
         } else if lowercased.contains("what can you do") {
-            return "I can help you with voice commands, answer questions, tell jokes, and more. Just ask me anything!"
+            return "I can help you with voice commands, answer questions, tell jokes, tell time, and more. Just ask me anything!"
+        } else if lowercased.contains("name") {
+            return "My name is JARVIS, which stands for Just A Rather Very Intelligent System. I'm here to assist you!"
+        } else if lowercased.contains("thank") {
+            return "You're welcome! I'm always here to help."
+        } else if lowercased.contains("bye") || lowercased.contains("goodbye") {
+            return "Goodbye! Feel free to call on me anytime you need assistance."
+        } else if lowercased.contains("help") {
+            return "I can help you with various tasks. Try asking me about the time, tell me a joke, or just have a conversation!"
         } else {
-            return "I heard you say: \(command). I'm still learning, but I'm here to help!"
+            return "I heard you say: \(command). I'm still learning, but I'm here to help! Try asking me what I can do."
         }
     }
 }
@@ -474,7 +587,8 @@ struct ParticleSystemView: View {
     }
     
     private func createParticles() {
-        for _ in 0..<20 {
+        particles.removeAll()
+        for _ in 0..<30 {
             let particle = Particle()
             particles.append(particle)
         }
@@ -497,16 +611,48 @@ struct Particle: Identifiable {
             x: CGFloat.random(in: 0...screenWidth),
             y: CGFloat.random(in: 0...screenHeight)
         )
-        size = CGFloat.random(in: 2...6)
-        opacity = Double.random(in: 0.1...0.3)
-        duration = Double.random(in: 8...15)
+        size = CGFloat.random(in: 2...8)
+        opacity = Double.random(in: 0.1...0.4)
+        duration = Double.random(in: 10...20)
     }
 }
 
-// MARK: - Scale Button Style
+// MARK: - Button Styles
 struct ScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+struct PrimaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 30)
+            .padding(.vertical, 12)
+            .background(
+                LinearGradient(
+                    colors: [Color(hex: "00D4FF"), Color(hex: "0099CC")],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .foregroundColor(.black)
+            .cornerRadius(20)
+            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+    }
+}
+
+struct SecondaryButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 30)
+            .padding(.vertical, 12)
+            .background(Color.white.opacity(0.1))
+            .foregroundColor(.white)
+            .cornerRadius(20)
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
     }
@@ -528,6 +674,14 @@ struct OnboardingView: View {
             Text("Your Advanced AI Assistant")
                 .font(.title2)
                 .foregroundColor(.white.opacity(0.8))
+            
+            VStack(spacing: 20) {
+                FeatureRow(icon: "mic.fill", title: "Voice Commands", description: "Speak naturally to interact")
+                FeatureRow(icon: "keyboard", title: "Text Input", description: "Type commands when needed")
+                FeatureRow(icon: "speaker.wave.2", title: "Voice Response", description: "Hear JARVIS speak back")
+                FeatureRow(icon: "brain.head.profile", title: "AI Intelligence", description: "Smart conversation and assistance")
+            }
+            .padding(.horizontal, 40)
             
             Spacer()
             
@@ -567,6 +721,34 @@ struct OnboardingView: View {
     }
 }
 
+// MARK: - Feature Row
+struct FeatureRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(spacing: 15) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(Color(hex: "00D4FF"))
+                .frame(width: 30)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Text(description)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            
+            Spacer()
+        }
+    }
+}
+
 // MARK: - Settings View
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -580,10 +762,10 @@ struct SettingsView: View {
                     .foregroundColor(Color(hex: "00D4FF"))
                 
                 VStack(spacing: 16) {
-                    SettingRow(title: "Voice Settings", icon: "speaker.wave.2")
-                    SettingRow(title: "MCP Servers", icon: "network")
-                    SettingRow(title: "Privacy", icon: "lock.shield")
-                    SettingRow(title: "About", icon: "info.circle")
+                    SettingRow(title: "Voice Settings", icon: "speaker.wave.2", action: {})
+                    SettingRow(title: "MCP Servers", icon: "network", action: {})
+                    SettingRow(title: "Privacy", icon: "lock.shield", action: {})
+                    SettingRow(title: "About", icon: "info.circle", action: {})
                 }
                 
                 Spacer()
@@ -607,24 +789,28 @@ struct SettingsView: View {
 struct SettingRow: View {
     let title: String
     let icon: String
+    let action: () -> Void
     
     var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .foregroundColor(Color(hex: "00D4FF"))
-                .frame(width: 24)
-            
-            Text(title)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(.white.opacity(0.5))
+        Button(action: action) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(Color(hex: "00D4FF"))
+                    .frame(width: 24)
+                
+                Text(title)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            .padding()
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(12)
         }
-        .padding()
-        .background(Color.white.opacity(0.05))
-        .cornerRadius(12)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 

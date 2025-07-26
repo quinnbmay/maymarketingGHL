@@ -19,10 +19,14 @@ class ElevenLabsService: ObservableObject {
     
     init(apiKey: String = JARVISConfiguration.elevenLabsAPIKey) {
         self.apiKey = apiKey
+        print("🎙️ ElevenLabsService initialized with API key: \(String(apiKey.prefix(10)))...")
     }
     
     func synthesizeSpeech(text: String, voiceID: String = JARVISConfiguration.ElevenLabs.defaultVoiceID) async throws -> Data {
+        print("🎙️ Starting speech synthesis for: \(text)")
+        
         guard apiKey != "YOUR_ELEVENLABS_API_KEY_HERE" else {
+            print("❌ Invalid API key detected")
             throw ElevenLabsError.invalidAPIKey
         }
         
@@ -54,38 +58,85 @@ class ElevenLabsService: ObservableObject {
             )
         )
         
-        request.httpBody = try JSONEncoder().encode(requestBody)
+        do {
+            request.httpBody = try JSONEncoder().encode(requestBody)
+            print("🎙️ Request body encoded successfully")
+        } catch {
+            print("❌ Failed to encode request body: \(error)")
+            throw ElevenLabsError.invalidRequest
+        }
         
+        print("🎙️ Sending request to ElevenLabs API...")
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ Invalid response type")
             throw ElevenLabsError.invalidResponse
         }
         
+        print("🎙️ Received response with status code: \(httpResponse.statusCode)")
+        
         guard httpResponse.statusCode == 200 else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+            print("❌ API Error (\(httpResponse.statusCode)): \(errorMessage)")
             await MainActor.run {
                 error = "API Error (\(httpResponse.statusCode)): \(errorMessage)"
             }
             throw ElevenLabsError.apiError(httpResponse.statusCode, errorMessage)
         }
         
+        print("✅ Speech synthesis successful, received \(data.count) bytes")
         return data
     }
     
     func playAudio(_ audioData: Data) async throws {
+        print("🔊 Playing audio...")
+        
         do {
+            // Stop any currently playing audio
+            stopAudio()
+            
+            // Create audio player
             audioPlayer = try AVAudioPlayer(data: audioData)
+            audioPlayer?.delegate = AudioPlayerDelegate.shared
             audioPlayer?.prepareToPlay()
-            audioPlayer?.play()
+            
+            // Configure audio session for playback
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .default, options: [.defaultToSpeaker])
+            try audioSession.setActive(true)
+            
+            // Start playback
+            let success = audioPlayer?.play() ?? false
+            if success {
+                print("✅ Audio playback started")
+            } else {
+                print("❌ Failed to start audio playback")
+                throw ElevenLabsError.playbackError(NSError(domain: "AudioPlayback", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to start playback"]))
+            }
         } catch {
+            print("❌ Audio playback error: \(error)")
             throw ElevenLabsError.playbackError(error)
         }
     }
     
     func stopAudio() {
+        print("🔇 Stopping audio...")
         audioPlayer?.stop()
         audioPlayer = nil
+    }
+}
+
+// MARK: - Audio Player Delegate
+class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
+    static let shared = AudioPlayerDelegate()
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        print("🔊 Audio playback finished successfully: \(flag)")
+    }
+    
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        print("❌ Audio decode error: \(error?.localizedDescription ?? "Unknown error")")
     }
 }
 
@@ -106,6 +157,7 @@ struct VoiceSettings: Codable {
 // MARK: - Error Types
 enum ElevenLabsError: Error, LocalizedError {
     case invalidAPIKey
+    case invalidRequest
     case invalidResponse
     case apiError(Int, String)
     case playbackError(Error)
@@ -114,6 +166,8 @@ enum ElevenLabsError: Error, LocalizedError {
         switch self {
         case .invalidAPIKey:
             return "Please configure your ElevenLabs API key in Configuration.swift"
+        case .invalidRequest:
+            return "Invalid request to ElevenLabs API"
         case .invalidResponse:
             return "Invalid response from ElevenLabs API"
         case .apiError(let code, let message):
