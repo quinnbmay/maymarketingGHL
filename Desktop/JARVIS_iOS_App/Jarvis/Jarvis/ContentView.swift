@@ -39,24 +39,41 @@ struct ContentView: View {
     }
     
     private func requestPermissions() {
-        // Request microphone permission
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            if granted {
-                print("✅ Microphone permission granted")
-            } else {
-                print("❌ Microphone permission denied")
+        // Request microphone permission using iOS 17+ API
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        print("✅ Microphone permission granted")
+                    } else {
+                        print("❌ Microphone permission denied")
+                    }
+                }
+            }
+        } else {
+            // Fallback for iOS 16 and earlier
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        print("✅ Microphone permission granted")
+                    } else {
+                        print("❌ Microphone permission denied")
+                    }
+                }
             }
         }
         
         // Request speech recognition permission
         SFSpeechRecognizer.requestAuthorization { status in
-            switch status {
-            case .authorized:
-                print("✅ Speech recognition authorized")
-            case .denied, .restricted, .notDetermined:
-                print("❌ Speech recognition not authorized")
-            @unknown default:
-                print("❓ Unknown speech recognition status")
+            DispatchQueue.main.async {
+                switch status {
+                case .authorized:
+                    print("✅ Speech recognition authorized")
+                case .denied, .restricted, .notDetermined:
+                    print("❌ Speech recognition not authorized")
+                @unknown default:
+                    print("❓ Unknown speech recognition status")
+                }
             }
         }
     }
